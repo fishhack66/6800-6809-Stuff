@@ -1,0 +1,228 @@
+
+Tiny BASIC grammar table (6800 Dendai version)
+Input rules: 	<command> <CR>
+		<statement> <CR>, [] is an optional function
+
+
+1. Commands
+-----------
+Keyword	Format	Function
+NEW	NEW	Delete all stored programs
+RUN	RUN	Execute user program
+LIST	LIST	Display the entire user program
+	LIST n	Display the program line n
+	LIST x,y  Display the program from line x to line y
+LOAD	LOAD	Load a program from cassette tape [NOT OPERATIONAL]
+AUTO	AUTO n	Line number generation; n initial value, incremented by 10
+		Reset with Ctrl-C
+EXIT	EXIT	Exit to monitor
+PRINT $	PRINT $	Display remaining user RAM (abbr. PR$)
+GOTO	GOTO n	Begin program execution at line n
+RETURN	RETURN	Resume a program interrupted by a STOP statement (abbr. RET)
+	Ctrl-C	Interrupt a running program
+	Ctrl-O	Erase one character [REPLACED WITH BACKSPACE (ASCII 08)]
+	Ctrl-X	Delete the current line
+	line #	A line number alone will delete that line from user program
+
+
+2. Statements
+-------------
+Keyword	Format/Example
+LET	LET (optional)	LET A=3   B=C/10	
+PRINT	PRINT (PR)	PRINT A   PR"TEXT ";A   PR '3 NUMBERS'A,B,C
+INPUT	INPUT (IN)	INPUT A   IN A,B,C      IN "3 NUMBERS",A,B,C
+GOTO	GOTO		GOTO 25   GOTO X
+GOSUB	GOSUB		GOSUB 1440	GOSUB X
+RETURN	RETURN		(placed at end of subroutine)
+IF	IF (THEN opt.)	IF A=B GOTO 450   IF C<12 PR "LESS"   IF Z<=9 LET Y=3
+FOR	FOR		FOR I=1 TO 12   FOR J=7 TO 1 STEP -1   FOR K=1 TO A-8
+NEXT	NEXT (x opt.)	NEXT I    NEXT
+STOP	STOP		(halts a program; restart with RET command)
+REM	REM		REM A PROGRAM BY DHH, 02MAR24
+END	END		(causes early termination of a program if not at end)
+
+
+3. Functions
+------------
+Keyword	Format/Example
+RND	RND(x)		random number   X=RND(12)+1   [NOT FUNCTIONAL]
+						       *see NOTES, below
+ABS	ABS(x)		absolute value   Y=ABS(V)   Z=ABS(A-B)
+MOD	MOD(x,y)	remainder of division. X=MOD(50,7) [X=1], X=MOD(X,17)
+USR	USR(x,y,z)	call user ML routine. X is address for JSR, Y is
+			value to pass via X register, Z is value to pass via
+			A and B accumulators, with A being the
+			least-significant byte of a 16-bit word.
+#	#(x)		absolute memory access.  X=#(4096) gives X the value
+			in memory location #4096 ($1000).  #(66)=Y places
+			the value of Y into location #66 ($0042).  This is
+			equivalent to PEEK and POKE in most BASICs.
+CHR	CHR(x)		print a character with ASCII value x   PR CHR(44)
+TAB	TAB(x);		begin print at screen column x.  PR TAB(20);"HELLO"
+
+
+4. Operators and Comparators
+----------------------------
+Type	Function
++	positivize	ensure that a number is positive
+-	negate		ensure that a number is negative
++	addition
+-	subtraction
+*	multiplication
+/	division
+=	equal
+<	less-than
+>	greater-than
+<=	less-than-or-equal-to
+>=	greater-than-or-equal-to
+
+
+5. Variables
+------------
+Total:	26, A-Z
+Range:	-32768 to 32767, $0000 to $FFFF  [$8000 = # -32768, $FFFF = -1]
+
+
+6. Array
+--------
+Total:	1, single dimension, named @       e.g.,  30 @(14)=12*(Y-X)
+Range:	free user RAM/2
+
+
+7. Error Messages
+-----------------
+100	Input Error
+110	Out of Memory
+120	Invalid Line Number
+130	Print Error
+140	Divide by Zero
+150	Expression Too Complex
+160	Arithmetic Error
+170	Modulo Error
+180	Unrecognizable Statement
+190	Subroutine Error
+200	Line Number Undefined
+210	FOR Error
+220	Undefined FOR Loop
+
+
+================
+
+From the original Japanese PDF:
+
+In the Dendai version (of Tiny BASIC), the statement seperator is 
+standardized to ':'. A semicolon is used for the Tab control character of a
+print element, just as in standard BASIC, and a single colon is used because
+we believe that a comma separator in an assignment list is not necessarily
+essential.  In addition, the prompt for commands and text input is '>' in the
+PA/University of Tokyo version, but '#' is used in the Dendai version. After
+that, it also has a line number generation function. This is possible by using
+the AUTO function. For example, if you set 'AUTO 100', the sentence input
+prompt start at 100, and from then on, each time you complete a line, the
+statement number is incremented by 10. Since it can be reset at any time by
+inputting an interrupt signal (CTRL-C), it is one of the most useful BASIC
+statement input functions.
+
+The BASIC interpreter has two startup addresses: $100 is the cold start
+address, and $103 is the warm start address.
+
+In addition to transitioning to monitor control with EXIT, one of the features
+provided is STOP. When a logic error occurs, insert a STOP statement with a
+line number at the required location to forcibly interrupt the process.  Use
+the PRINT statement or, if necessary, EXIT to check the error content, correct
+it, or RETURN. In addition, a fairly powerful program trace function is
+provided in conjunction with the GOTO x command.  Note that the input
+character set is the ASCII upper and lower case character set. Both inputs are
+treated equally.
+
+
+=======
+ NOTES
+=======
+
+Both cold start ($0100) and warm start ($0103), as patched, do not clear user
+memory.  Issue a NEW command after a cold start to reset start of user RAM.
+
+The NEW command does *not* clear out the variables A-Z; it only resets the
+start of user RAM pointer.
+
+Numbers are integers and range from -32768 to 32767 ($8000, wrap to $7FFF).
+
+Line numbers may be from 1 up to 32767.
+
+Variables may be input (IN) or assigned (LET) in either decimal or hexidecimal
+(prefixed with $), but output (PRINT) is only in decimal.
+
+The order of precedence is:	1. sign			+ or -
+				2. multiplication
+				   and division		* or /
+				3. addition and
+				   subtraction		+ or -
+Parentheses may be used to to change the order of operation.
+
+Program entry can be made in lower case, but will be converted to upper case.
+
+The character '%' (percent) will not print; instead, it's replaced with '@'.
+
+On a modern (2024) serial terminal emulator, only upper case ASCII < 127 of
+the UTF-8 character set will print; but ASCII <= 255 will print with the
+IBM-850 set (any of the IBM-85x sets should work).  This also gives you the
+box- and line-drawing characters, and more symbols.  Lower case letters, etc.,
+can be printed via a combined use of PR CHR(x) and the @ array.  This one-
+liner will print out the full character set:
+	10 FOR I=0TO15:FORJ=0TO15:PR CHR(I*16+J);"  ";:NEXT J:PR:NEXT I
+
+The @ array can grow dynamically up to remaining user RAM/2.  It also appears
+to be accessible with the marker % -- in the original Japanese text, % use
+roughly translates to: "to be used only when entering keys."  [???]
+
+Statements may be chained together on a single line with a colon.  E.g.:
+	100 FOR I=32 TO 255 STEP 2:PR I:NEXT:PR"ALL DONE."
+
+Like most BASICs, Dendai Tiny BASIC will fall out of a multi-statement line
+if a comparison returns 'false'.  E.g.:
+		240 FOR I=1 TO 12:IF I>6 PR I:NEXT
+will print nothing, having failed the test on the first loop.  Worse, it
+leaves a return address on the FOR/NEXT stack.  Perhaps use an IF/THEN
+structure to loop if you need to prematurely break out of the loop.
+
+The LOAD command is meant to reload a program tape dumped by paper tape output
+or Kansas City cassette recording.  It should be possible to load in an
+S Record file, but this command did not work on my system.  See address $0196
+in the source code listing.  To load a text-listed program via serial terminal
+emulator upload, set a character delay of 10 ms and a line delay of 200 ms,
+then send the file.  The plain text source file should not have any blank
+lines between program lines, and should be CR-only line terminated (Linux is
+typically LF-only, and Windows CR-LF).  Further, you may have to use extreme
+character and line delays (e.g., 100ms char/1000ms line) to get larger
+programs to load completely; I do not know why this is...
+
+To save programs via a modern serial terminal emulator, start a text
+capture, LIST the program, then close/save the text file; the program will
+start each line with an unprintable character, which can be cleaned up in
+any modern text editor. 
+
+The pseudo-random number generator in the source code (at $05EA) does not
+behave as expected, and try as I might, I can't figure out what's going wrong.
+It's got something to do with processing the random number so it is within
+the range specified by the expression of the function.  So, I edited a copy of
+it, put that code at $0004, and when the routine is called with the USR
+function, you get a random number back in the range -32768 to 32767.  E.g.,
+			10 X=USR(4):X=MOD(X,6)+1
+X will contain a random number from 1 to 6.  Not as elegant as RND, but it
+works.
+
+=========================================
+
+About Dendai Tiny BASIC and this document:
+   This document is derived from a description of Dendai Tiny BASIC in the
+Japanese magazine 'bit', volume 10, no. 8, pages 44-45.  The text was run
+through Google Translate and then edited for English usage and clarity.  There
+appears to be more to the original article than was contained in the PDF file
+of the command/statement/function descriptions.
+   Dendai Tiny BASIC was made popular by the "BLUE BACKS" book "Use My
+Computer: Peripheral Devices and Actual Usage," by Toshiaki Yasuda, in the
+late 1970s.  The interpreter is detailed in the appendix of the book.  This
+particular Tiny BASIC appears to be an extension of "PA/Tokyo University"
+Tiny BASIC (likely based on Li-Chen Wang's Palo Alto Tiny BASIC), and was
+developed by Yasuda when he was at Tokyo Denki University.

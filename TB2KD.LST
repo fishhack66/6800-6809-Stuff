@@ -1,0 +1,1330 @@
+    1                   * 2018/01/24
+    2                   * STACK         $1F47 : $A047
+    3                   * SUBSTK        $1F80 : $A080
+    4                   *
+    5 8018              ACIACS     EQU      $8018
+    6 0980              RAMSSS     EQU      $0980
+    7 1EFF              RAMEEE     EQU      $1EFF
+    8                   *
+   10 001A                         ORG      $1A
+   11 001A              V          RMB      2
+   12 001C              W          RMB      2
+   13 001E              Z          RMB      2
+   14 0020              RND        RMB      2
+   15 0022              LN         RMB      2
+   16 0024              PX         RMB      2
+   17 0026              SP         RMB      2
+   18 0028              LNADRS     RMB      2
+   19 002A              BUFEND     RMB      2
+   20 002C              LDFLG      RMB      1
+   21 002D              AFLG       RMB      1
+   22 002E              CHCNT      RMB      1
+   23 002F              F          RMB      1
+   24 0030              BUFFER     RMB      80
+   25 0080              EXSTK      EQU      *
+   26 0080              EXSP       RMB      2
+   27 0082                         RMB      52
+   28 00B6              PRSTRT     RMB      2
+   29 00B8              PREND      RMB      2
+   30 00BA              RAMEND     RMB      2
+   31 00BC              SUBSP      RMB      2
+   32 00BE              FORSP      RMB      2
+   33 00C0                         RMB      64
+   34 0100              FORSTK     EQU      *
+   35 1F47              STACK      EQU      $1F47       ; $A047
+   36 1F80              SUBSTK     EQU      $1F80       ; $A080
+   37 E1AC              INEEE      EQU      $E1AC
+   38 E1D1              OUTEEE     EQU      $E1D1
+   39 E0D0              RESET      EQU      $E0D0
+   40 0100                         ORG      $100
+   41                   *
+   42 0100 BD01B3                  JSR      START
+   43 0103 7E01CB                  JMP      CONTRL
+   44                   *
+   45 0106 8D68         LOADM      BSR      IN
+   46 0108 8102                    CMPA     #2
+   47 010A 26FA                    BNE      LOADM
+   48 010C 201E                    BRA      GL2
+   49                   *
+   50 010E 962C         GTLINE     LDAA     LDFLG
+   51 0110 26F4                    BNE      LOADM
+   52 0112 962D                    LDAA     AFLG
+   53 0114 2711                    BEQ      GL1
+   54 0116 860A                    LDAA     #10
+   55 0118 5F                      CLRB
+   56 0119 CE0022                  LDX      #LN
+   57 011C BD049C                  JSR      ADD3
+   58 011F BD040A                  JSR      PNUM
+   59 0122 BD07EE                  JSR      OUTS
+   60 0125 2008                    BRA      GL3
+   61                   *
+   62 0127 8623         GL1        LDAA     #'#
+   63 0129 BD0448                  JSR      OUT
+   64 012C CE0030       GL2        LDX      #BUFFER
+   65 012F 9820         GL3        EORA     RND
+   66 0131 9720                    STAA     RND
+   67 0133 8D3B                    BSR      IN
+   68 0135 810D                    CMPA     #$D
+   69 0137 260F                    BNE      GL4
+   70 0139 6F00                    CLR      0,X
+   71 013B DF2A                    STX      BUFEND
+   72 013D 962C                    LDAA     LDFLG
+   73 013F 2603                    BNE      *+5
+   74 0141 BD0840       NEWL2      JSR      NWLINE
+   75 0144 CE0030                  LDX      #BUFFER
+   76 0147 39                      RTS
+   77                   *
+   78 0148 8118         GL4        CMPA     #$18
+   79 014A 2604                    BNE      GL5
+   80 014C 8DF3                    BSR      NEWL2
+   81 014E 20DF                    BRA      GL3
+   82                   *
+   83 0150 810F         GL5        CMPA     #$F
+   84 0152 260D                    BNE      GL6
+   85 0154 865F                    LDAA     #$5F
+   86 0156 BD0448                  JSR      OUT
+   87 0159 8C0030                  CPX      #BUFFER
+   88 015C 27D1                    BEQ      GL3
+   89 015E 09                      DEX
+   90 015F 20CE                    BRA      GL3
+   91                   *
+   92 0161 8C0076       GL6        CPX      #BUFFER+70
+   93 0164 2705                    BEQ      ERR100
+   94 0166 A700                    STAA     0,X
+   95 0168 08                      INX
+   96 0169 20C4                    BRA      GL3
+   97                   *
+   98 016B C664         ERR100     LDAB     #100
+   99 016D 7E085D                  JMP      ERRMSG
+  100                   *
+  101 0170 BD093F       IN         JSR      INFFF
+  102 0173 847F                    ANDA     #$7F
+  103 0175 27F9                    BEQ      IN
+  104 0177 817F                    CMPA     #$7F
+  105 0179 27F5                    BEQ      IN
+  106 017B 8103                    CMPA     #3
+  107 017D 260B                    BNE      BR6
+  108 017F 204A                    BRA      CONTRL
+  109                   *
+  110 0181 36           BREAK      PSHA
+  111                   *---------------------
+  112                   *       LDA A   $8004
+  113                   *       BMI     BR5
+  114                   *
+  115 0182 BD093A                  JSR      POLCAA
+  116 0185 2402                    BCC      BR5
+  117                   *---------------------
+  118 0187 8DE7                    BSR      IN
+  119 0189 32           BR5        PULA
+  120 018A 39           BR6        RTS
+  121                   *
+  122 018B DEB6         INIT1      LDX      PRSTRT
+  123 018D 07                      TPA
+  124 018E A700                    STAA     0,X
+  125 0190 08                      INX
+  126 0191 A700                    STAA     0,X
+  127 0193 DFB8                    STX      PREND
+  128 0195 39                      RTS
+  129                   *
+  130 0196 8DF3         LOAD       BSR      INIT1
+  131 0198 972C                    STAA     LDFLG
+  132 019A 2041                    BRA      C4
+  133                   *
+  134 019C 07           AUTO       TPA
+  135 019D 972D                    STAA     AFLG
+  136 019F BD06A7                  JSR      EXPRPP
+  137 01A2 800A                    SUBA     #10
+  138 01A4 C200                    SBCB     #0
+  139 01A6 9723         SETLN      STAA     LN+1
+  140 01A8 D722                    STAB     LN
+  141 01AA 39                      RTS
+  142                   *
+  143 01AB BD0335       STOP       JSR      PRINT
+  144 01AE BD0684                  JSR      PSX
+  145 01B1 201E                    BRA      C3
+  146                   *
+  147 01B3 CE0980       START      LDX      #RAMSSS
+  148 01B6 DFB6                    STX      PRSTRT
+  149                   *---------------------
+  150 01B8 01                      NOP
+  151 01B9 01                      NOP
+  152 01BA 01                      NOP
+  153 01BB 01                      NOP
+  154 01BC 01                      NOP
+  155 01BD 01                      NOP
+  156 01BE 01                      NOP
+  157 01BF 01                      NOP
+  158 01C0 01                      NOP
+  159 01C1 01                      NOP
+  160 01C2 01                      NOP
+  161 01C3 01                      NOP
+  162                   *
+  163                   *       LDA A   #$AA
+  164                   *MEMTST INX
+  165                   *       LDA B   1,X
+  166                   *       STA A   1,X
+  167                   *       LDA A   1,x
+  168                   *       STA B   1,X
+  169                   *       CMP A   #$AA
+  170                   *
+  171                   *       BEQ     MEMTST
+  172                   *
+  173 01C4 CE1EFF                  LDX      #RAMEEE
+  174                   *----------------------
+  175 01C7 DFBA                    STX      RAMEND
+  176 01C9 8DC0         NEW        BSR      INIT1
+  177 01CB 8E1F47       CONTRL     LDS      #STACK
+  178 01CE 0F                      SEI
+  179 01CF 8D7F                    BSR      INIT2
+  180 01D1 BD0840       C3         JSR      NWLINE
+  181 01D4 CE0932                  LDX      #RDYMSG
+  182 01D7 BD0857                  JSR      PD
+  183 01DA 07                      TPA
+  184 01DB 9728                    STAA     LNADRS
+  185 01DD 8E1F47       C4         LDS      #STACK
+  186 01E0 BD010E                  JSR      GTLINE
+  187 01E3 BD0506                  JSR      GETN
+  188 01E6 247D                    BCC      DIRECT
+  189 01E8 8DBC                    BSR      SETLN
+  190 01EA 8D02                    BSR      EDIT
+  191 01EC 20EF                    BRA      C4
+  192                   *
+  193 01EE DF24         EDIT       STX      PX
+  194 01F0 9F26                    STS      SP
+  195 01F2 8D37                    BSR      LDTST
+  196 01F4 DF1E                    STX      Z
+  197 01F6 2512                    BCS      INSERT
+  198 01F8 8D72                    BSR      NXTL
+  199 01FA 08                      INX
+  200 01FB 35                      TXS
+  201 01FC DE1E                    LDX      Z
+  202 01FE 58           MOVE1      ASLB
+  203 01FF 33                      PULB
+  204 0200 E700                    STAB     0,X
+  205 0202 08                      INX
+  206 0203 2AF9                    BPL      MOVE1
+  207 0205 24F7                    BCC      MOVE1
+  208 0207 09                      DEX
+  209 0208 DFB8                    STX      PREND
+  210 020A DE24         INSERT     LDX      PX
+  211 020C A600                    LDAA     0,X
+  212 020E 273D                    BEQ      INS3
+  213 0210 962B                    LDAA     BUFEND+1
+  214 0212 9025                    SUBA     PX+1
+  215 0214 8B03                    ADDA     #3
+  216 0216 DEB8                    LDX      PREND
+  217 0218 9BB9                    ADDA     PREND+1
+  218 021A 97B9                    STAA     PREND+1
+  219 021C 2403                    BCC      *+5
+  220 021E 7C00B8                  INC      PREND
+  221 0221 8D7D                    BSR      SIZE
+  222 0223 240F                    BCC      INS2
+  223 0225 DFB8                    STX      PREND
+  224 0227 C66E         ERR110     LDAB     #110
+  225 0229 205F                    BRA      ERROR
+  226                   *
+  227 022B 962C         LDTST      LDAA     LDFLG
+  228 022D 274C                    BEQ      LNFD
+  229 022F DEB8                    LDX      PREND
+  230 0231 09                      DEX
+  231 0232 0D                      SEC
+  232 0233 39                      RTS
+  233                   *
+  234 0234 9EB8         INS2       LDS      PREND
+  235 0236 08                      INX
+  236 0237 09           MOVE2      DEX
+  237 0238 A600                    LDAA     0,X
+  238 023A 36                      PSHA
+  239 023B 9C1E                    CPX      Z
+  240 023D 26F8                    BNE      MOVE2
+  241 023F 9E22                    LDS      LN
+  242 0241 AF00                    STS      0,X
+  243 0243 08                      INX
+  244 0244 9E24                    LDS      PX
+  245 0246 34                      DES
+  246 0247 08           MOVE3      INX
+  247 0248 32                      PULA
+  248 0249 A700                    STAA     0,X
+  249 024B 26FA                    BNE      MOVE3
+  250 024D 9E26         INS3       LDS      SP
+  251 024F 39                      RTS
+  252                   *
+  253 0250 CE0000       INIT2      LDX      #0
+  254 0253 DF2C                    STX      LDFLG
+  255 0255 CE0100                  LDX      #FORSTK
+  256 0258 DFBE                    STX      FORSP
+  257 025A CE1F80                  LDX      #SUBSTK
+  258 025D DFBC                    STX      SUBSP
+  259 025F CE0080                  LDX      #EXSTK
+  260 0262 DF80                    STX      EXSP
+  261 0264 39                      RTS
+  262                   *
+  263 0265 DF24         DIRECT     STX      PX
+  264 0267 CE0880                  LDX      #TABLE2-2
+  265 026A 2057                    BRA      STMT4
+  266                   *
+  267 026C 08           NXTL       INX
+  268 026D 08                      INX
+  269 026E 6D00         NXTL2      TST      0,X
+  270 0270 26FB                    BNE      *-3
+  271 0272 39                      RTS
+  272                   *
+  273 0273 DE28         FINDER     LDX      LNADRS
+  274 0275 2B04                    BMI      LNFD
+  275 0277 8D04                    BSR      LNFD+2
+  276 0279 2419                    BCC      LNFD3+4
+  277 027B DEB6         LNFD       LDX      PRSTRT
+  278 027D 9623                    LDAA     LN+1
+  279 027F D622                    LDAB     LN
+  280 0281 2B05                    BMI      ERR120
+  281 0283 260B                    BNE      LNFD3
+  282 0285 4D                      TSTA
+  283 0286 2608                    BNE      LNFD3
+  284 0288 C678         ERR120     LDAB     #120
+  285 028A 7E085D       ERROR      JMP      ERRMSG
+  286                   *
+  287 028D 8DDD                    BSR      NXTL
+  288 028F 08                      INX
+  289 0290 8D6E         LNFD3      BSR      CMPX
+  290 0292 22F9                    BHI      *-5
+  291 0294 39                      RTS
+  292                   *
+  293 0295 BD06A7       IF         JSR      EXPRPP
+  294 0298 5D                      TSTB
+  295 0299 2620                    BNE      STMT3
+  296 029B 4D                      TSTA
+  297 029C 27D0                    BEQ      NXTL2
+  298 029E 201B                    BRA      STMT3
+  299                   *
+  300 02A0 96BB         SIZE       LDAA     RAMEND+1
+  301 02A2 D6BA                    LDAB     RAMEND
+  302 02A4 90B9                    SUBA     PREND+1
+  303 02A6 D2B8                    SBCB     PREND
+  304 02A8 39                      RTS
+  305                   *
+  306 02A9 7E01D1       C7         JMP      C3
+  307                   *
+  308 02AC 8DA2         RUN        BSR      INIT2
+  309 02AE DEB6                    LDX      PRSTRT
+  310 02B0 DF28         STMT       STX      LNADRS
+  311 02B2 A600                    LDAA     0,X
+  312 02B4 48                      ASLA                 ,
+  313 02B5 9628                    LDAA     LNADRS
+  314 02B7 23F0                    BLS      C7
+  315 02B9 08                      INX
+  316 02BA 08                      INX
+  317 02BB BD0181       STMT3      JSR      BREAK
+  318 02BE DF24                    STX      PX
+  319 02C0 CE08A0                  LDX      #TABLE-2
+  320 02C3 8E1F47       STMT4      LDS      #STACK
+  321 02C6 BD0580                  JSR      OPRATE
+  322 02C9 09                      DEX
+  323 02CA A600         STMT5      LDAA     0,X
+  324 02CC 08                      INX
+  325 02CD 813A                    CMPA     #':
+  326 02CF 27EA                    BEQ      STMT3
+  327 02D1 4D                      TSTA
+  328 02D2 26F6                    BNE      STMT5
+  329 02D4 20DA                    BRA      STMT
+  330                   *
+  331 02D6 5F           HEXA       CLRB
+  332 02D7 D71E                    STAB     Z
+  333 02D9 8D16                    BSR      TSTHEX
+  334 02DB 24C3                    BCC      SIZE
+  335 02DD 49           HEX2       ROLA
+  336 02DE 48                      ASLA
+  337 02DF 48                      ASLA
+  338 02E0 48                      ASLA
+  339 02E1 48                      ASLA
+  340 02E2 79001E       SHIFT      ROL      Z
+  341 02E5 59                      ROLB
+  342 02E6 48                      ASLA
+  343 02E7 26F9                    BNE      SHIFT
+  344 02E9 08                      INX
+  345 02EA 8D05                    BSR      TSTHEX
+  346 02EC 25EF                    BCS      HEX2
+  347 02EE 961E                    LDAA     Z
+  348 02F0 39                      RTS
+  349                   *
+  350 02F1 BD052E       TSTHEX     JSR      TSTN
+  351 02F4 2509                    BCS      HEX3
+  352 02F6 8007                    SUBA     #7
+  353 02F8 813A                    CMPA     #$3A
+  354 02FA 0C                      CLC
+  355 02FB 2D02                    BLT      *+4
+  356 02FD 8140                    CMPA     #$40
+  357 02FF 39           HEX3       RTS
+  358                   *
+  359 0300 E100         CMPX       CMPB     0,X
+  360 0302 2602                    BNE      *+4
+  361 0304 A101                    CMPA     1,X
+  362 0306 39                      RTS
+  363                   *
+  364 0307 DF24         SRCH2      STX      PX
+  365 0309 CE0910                  LDX      #TABLE4-2
+  366 030C 9F26         SEARCH     STS      SP
+  367 030E 9E24         S0         LDS      PX
+  368 0310 34                      DES
+  369 0311 08                      INX
+  370 0312 08           S1         INX
+  371 0313 32           S2         PULA
+  372 0314 8120                    CMPA     #$20
+  373 0316 27FB                    BEQ      S2
+  374 0318 16                      TAB
+  375 0319 A000                    SUBA     0,X
+  376 031B 48                      ASLA
+  377 031C 2609                    BNE      S5
+  378 031E 24F2                    BCC      S1
+  379 0320 08                      INX
+  380 0321 31           S4         INS
+  381 0322 9F24         S3         STS      PX
+  382 0324 9E26                    LDS      SP
+  383 0326 39                      RTS
+  384                   *
+  385 0327 A600         S5         LDAA     0,X
+  386 0329 08                      INX
+  387 032A 2AFB                    BPL      S5
+  388 032C C12E                    CMPB     #'.
+  389 032E 27F1                    BEQ      S4
+  390 0330 43                      COMA
+  391 0331 26DB                    BNE      S0
+  392 0333 20ED                    BRA      S3
+  393                   *
+  394 0335 8D22         PRINT      BSR      SKB9
+  395 0337 2723                    BEQ      PR9
+  396 0339 8D40         PR3        BSR      PQUOTE
+  397 033B 2708                    BEQ      PR4
+  398 033D DF24                    STX      PX
+  399 033F CE091A                  LDX      #TABLE5-2
+  400 0342 BD0580                  JSR      OPRATE
+  401 0345 8D12         PR4        BSR      SKB9
+  402 0347 2713                    BEQ      PR9
+  403 0349 813B                    CMPA     #';
+  404 034B 2706                    BEQ      PR5
+  405 034D 812C                    CMPA     #',
+  406 034F 2649                    BNE      ERR130
+  407 0351 8D0F                    BSR      PT
+  408 0353 08           PR5        INX
+  409 0354 8D03         PR6        BSR      SKB9
+  410 0356 26E1                    BNE      PR3
+  411 0358 39                      RTS
+  412                   *
+  413 0359 7E045F       SKB9       JMP      SKB
+  414                   *
+  415 035C 7E0840       PR9        JMP      NWLINE
+  416                   *
+  417 035F BD07EE                  JSR      OUTS
+  418 0362 962E         PT         LDAA     CHCNT
+  419 0364 8507                    BITA     #7
+  420 0366 26F7                    BNE      PT-3
+  421 0368 39                      RTS
+  422                   *
+  423 0369 8D29         CHR        BSR      FACTPP
+  424 036B 7E0448       OUT7       JMP      OUT
+  425                   *
+  426 036E 8D24         TAB        BSR      FACTPP
+  427 0370 16                      TAB
+  428 0371 2003                    BRA      TAB2
+  429                   *
+  430 0373 BD07EE                  JSR      OUTS
+  431 0376 D12E         TAB2       CMPB     CHCNT
+  432 0378 22F9                    BHI      *-5
+  433 037A 39                      RTS
+  434                   *
+  435 037B 8DDC         PQUOTE     BSR      SKB9
+  436 037D 8122                    CMPA     #'"
+  437 037F 2704                    BEQ      *+6
+  438 0381 8127                    CMPA     #''
+  439 0383 260E                    BNE      PQ5
+  440 0385 16                      TAB
+  441 0386 08                      INX
+  442 0387 2002                    BRA      *+4
+  443                   *
+  444 0389 8DE0         PQ4        BSR      OUT7
+  445 038B A600                    LDAA     0,X
+  446 038D 270B                    BEQ      ERR130
+  447 038F 08                      INX
+  448 0390 11                      CBA
+  449 0391 26F6                    BNE      PQ4
+  450 0393 39           PQ5        RTS
+  451                   *
+  452 0394 BD05C1       FACTPP     JSR      FACT9
+  453 0397 7E06A9                  JMP      POP
+  454                   *
+  455 039A C682         ERR130     LDAB     #130
+  456 039C 2002                    BRA      *+4
+  457                   *
+  458 039E C68C         ERR140     LDAB     #140
+  459 03A0 7E085D                  JMP      ERRMSG
+  460                   *
+  461 03A3 A600         DIVIDE     LDAA     0,X
+  462 03A5 AA01                    ORAA     1,X
+  463 03A7 27F5                    BEQ      ERR140
+  464 03A9 8D40                    BSR      SETCNT
+  465 03AB 8D2C                    BSR      ROL2X
+  466 03AD 49                      ROLA
+  467 03AE 40                      NEGA
+  468 03AF 16                      TAB
+  469 03B0 8D2C                    BSR      CHECK
+  470 03B2 49                      ROLA
+  471 03B3 8801                    EORA     #1
+  472 03B5 46                      RORA
+  473 03B6 8D1C                    BSR      DIV3
+  474 03B8 BD0300                  JSR      CMPX
+  475 03BB 2608                    BNE      RDIV
+  476 03BD 4F                      CLRA
+  477 03BE 16                      TAB
+  478 03BF 6C03                    INC      3,X
+  479 03C1 2602                    BNE      *+4
+  480 03C3 6C02                    INC      2,X
+  481 03C5 08           RDIV       INX
+  482 03C6 08                      INX
+  483 03C7 39                      RTS
+  484                   *
+  485 03C8 8D21         BINDIV     BSR      SETCNT
+  486 03CA 8D0D         DIV2       BSR      ROL2X
+  487 03CC 49                      ROLA
+  488 03CD 59                      ROLB
+  489 03CE A001                    SUBA     1,X
+  490 03D0 E200                    SBCB     0,X
+  491 03D2 8D0A                    BSR      CHECK
+  492 03D4 7A002F       DIV3       DEC      F
+  493 03D7 26F1                    BNE      DIV2
+  494 03D9 6903         ROL2X      ROL      3,X
+  495 03DB 6902                    ROL      2,X
+  496 03DD 39                      RTS
+  497                   *
+  498 03DE 37           CHECK      PSHB
+  499 03DF E800                    EORB     0,X
+  500 03E1 33                      PULB
+  501 03E2 0D                      SEC
+  502 03E3 2A05                    BPL      *+7
+  503 03E5 AB01                    ADDA     1,X
+  504 03E7 E900                    ADCB     0,X
+  505 03E9 0C                      CLC
+  506 03EA 39                      RTS
+  507                   *
+  508 03EB 8610         SETCNT     LDAA     #16
+  509 03ED 972F                    STAA     F
+  510 03EF 4F                      CLRA
+  511 03F0 16                      TAB
+  512 03F1 39                      RTS
+  513                   *
+  514 03F2 8DF7         MULT       BSR      SETCNT
+  515 03F4 48           MLT2       ASLA
+  516 03F5 59                      ROLB
+  517 03F6 6901                    ROL      1,X
+  518 03F8 6900                    ROL      0,X
+  519 03FA 2404                    BCC      *+6
+  520 03FC AB03                    ADDA     3,X
+  521 03FE E902                    ADCB     2,X
+  522 0400 7A002F                  DEC      F
+  523 0403 26EF                    BNE      MLT2
+  524 0405 08                      INX
+  525 0406 08                      INX
+  526 0407 7E04A0                  JMP      STAX
+  527                   *
+  528 040A EE00         PNUM       LDX      0,X
+  529 040C DF1C                    STX      W
+  530 040E CE001C                  LDX      #W
+  531 0411 8D3E                    BSR      ABSX
+  532 0413 2404                    BCC      PN2
+  533 0415 862D                    LDAA     #'-
+  534 0417 8D2F                    BSR      OUT
+  535 0419 09           PN2        DEX
+  536 041A 09                      DEX
+  537 041B C60A                    LDAB     #10
+  538 041D E701                    STAB     1,X
+  539 041F 6F00                    CLR      0,X
+  540 0421 57                      ASRB
+  541 0422 37           PN3        PSHB
+  542 0423 8DA3                    BSR      BINDIV
+  543 0425 33                      PULB
+  544 0426 36                      PSHA
+  545 0427 5A                      DECB
+  546 0428 26F8                    BNE      PN3
+  547 042A CE0030                  LDX      #BUFFER
+  548 042D C604                    LDAB     #4
+  549 042F 962F         PN4        LDAA     F
+  550 0431 32                      PULA
+  551 0432 2604                    BNE      PN5
+  552 0434 972F                    STAA     F
+  553 0436 2702                    BEQ      *+4
+  554 0438 8D04         PN5        BSR      PN6
+  555 043A 5A                      DECB
+  556 043B 26F2                    BNE      PN4
+  557 043D 32                      PULA
+  558 043E 8B30         PN6        ADDA     #$30
+  559 0440 7D002D                  TST      AFLG
+  560 0443 2703                    BEQ      *+5
+  561 0445 A700                    STAA     0,X
+  562 0447 08                      INX
+  563 0448 7C002E       OUT        INC      CHCNT
+  564 044B BD0181                  JSR      BREAK
+  565 044E 7EE1D1                  JMP      OUTEEE
+  566                   *
+  567 0451 6D00         ABSX       TST      0,X
+  568 0453 2A08                    BPL      RABS
+  569 0455 6001         NEGX       NEG      1,X
+  570 0457 2602                    BNE      *+4
+  571 0459 6A00                    DEC      0,X
+  572 045B 6300                    COM      0,X
+  573 045D 39           RABS       RTS
+  574                   *
+  575 045E 08           SKB2       INX
+  576 045F A600         SKB        LDAA     0,X
+  577 0461 8120                    CMPA     #$20
+  578 0463 27F9                    BEQ      SKB2
+  579 0465 4D                      TSTA
+  580 0466 2703                    BEQ      *+5
+  581 0468 813A                    CMPA     #':
+  582 046A 0D                      SEC
+  583 046B 39                      RTS
+  584                   *
+  585 046C 8DF1         EXPR3      BSR      SKB
+  586 046E 812D                    CMPA     #'-
+  587 0470 2604                    BNE      E3
+  588 0472 8D1F                    BSR      E9
+  589 0474 2007                    BRA      E5
+  590                   *
+  591 0476 812B         E3         CMPA     #'+
+  592 0478 2701                    BEQ      E4
+  593 047A 09                      DEX
+  594 047B 8D5C         E4         BSR      TERM2
+  595 047D DE24         E5         LDX      PX
+  596 047F 8DDE                    BSR      SKB
+  597 0481 812B                    CMPA     #'+
+  598 0483 2606                    BNE      E6
+  599 0485 8D52                    BSR      TERM2
+  600 0487 8D0E         E55        BSR      ADD
+  601 0489 20F2                    BRA      E5
+  602                   *
+  603 048B 812D         E6         CMPA     #'-
+  604 048D 2615                    BNE      E7
+  605 048F 8D02                    BSR      E9
+  606 0491 20F4                    BRA      E55
+  607                   *
+  608 0493 8D44         E9         BSR      TERM2
+  609 0495 20BE                    BRA      NEGX
+  610                   *
+  611 0497 BD06A9       ADD        JSR      POP
+  612 049A 08                      INX
+  613 049B 08                      INX
+  614 049C AB01         ADD3       ADDA     1,X
+  615 049E E900                    ADCB     0,X
+  616 04A0 A701         STAX       STAA     1,X
+  617 04A2 E700                    STAB     0,X
+  618 04A4 39           E7         RTS
+  619                   *
+  620 04A5 BD05C1       ABS        JSR      FACT9
+  621 04A8 8D31                    BSR      SAVE
+  622 04AA 8DA5                    BSR      ABSX
+  623 04AC DE24                    LDX      PX
+  624 04AE 39                      RTS
+  625                   *
+  626 04AF 8DAE         TSTEQ      BSR      SKB
+  627 04B1 813D                    CMPA     #'=
+  628 04B3 2615                    BNE      R5
+  629 04B5 31                      INS
+  630 04B6 31                      INS
+  631 04B7 5C                      INCB
+  632 04B8 200D                    BRA      R3
+  633                   *
+  634 04BA 5F           REL        CLRB
+  635 04BB 8DF2                    BSR      TSTEQ
+  636 04BD 8D12                    BSR      R7
+  637 04BF 260A                    BNE      R6
+  638 04C1 8DEC                    BSR      TSTEQ
+  639 04C3 813E         R2         CMPA     #'>
+  640 04C5 2603                    BNE      R5
+  641 04C7 5C           R3         INCB
+  642                   
+  643 04C8 08           R4         INX
+  644 04C9 4F                      CLRA
+  645 04CA 39           R5         RTS
+  646                   *
+  647 04CB 8DF6         R6         BSR      R2
+  648 04CD 26FB                    BNE      R5
+  649 04CF 8DDE                    BSR      TSTEQ
+  650 04D1 813C         R7         CMPA     #'<
+  651 04D3 26F5                    BNE      R5
+  652 04D5 CB04                    ADDB     #4
+  653 04D7 20EF                    BRA      R4
+  654                   *
+  655 04D9 8D5E         TERM2      BSR      TERM
+  656 04DB DF24         SAVE       STX      PX
+  657 04DD DE80                    LDX      EXSP
+  658 04DF 39                      RTS
+  659                   *
+  660 04E0 8D8A         EXPR       BSR      EXPR3
+  661 04E2 8DD6                    BSR      REL
+  662 04E4 5D                      TSTB
+  663 04E5 27E3                    BEQ      R5
+  664 04E7 37                      PSHB
+  665 04E8 8D82                    BSR      EXPR3
+  666 04EA BD06A9                  JSR      POP
+  667 04ED DE80                    LDX      EXSP
+  668 04EF A001                    SUBA     1,X
+  669 04F1 E200                    SBCB     0,X
+  670 04F3 33                      PULB
+  671 04F4 2D07                    BLT      LT
+  672 04F6 2E03                    BGT      GT
+  673 04F8 4D                      TSTA
+  674 04F9 2701                    BEQ      EQ
+  675 04FB 57           GT         ASRB
+  676 04FC 57           EQ         ASRB
+  677 04FD C401         LT         ANDB     #1
+  678 04FF E701                    STAB     1,X
+  679 0501 6F00                    CLR      0,X
+  680 0503 DE1E                    LDX      Z
+  681 0505 39                      RTS
+  682                   *
+  683 0506 8D26         GETN       BSR      TSTN
+  684 0508 2423                    BCC      NOTN
+  685 050A 5F                      CLRB
+  686 050B D71F                    STAB     Z+1
+  687 050D D71E         GN2        STAB     Z
+  688 050F 840F                    ANDA     #$F
+  689 0511 972F                    STAA     F
+  690 0513 961F                    LDAA     Z+1
+  691 0515 48                      ASLA
+  692 0516 59                      ROLB
+  693 0517 48                      ASLA
+  694 0518 59                      ROLB
+  695 0519 9B1F                    ADDA     Z+1
+  696 051B D91E                    ADCB     Z
+  697 051D 48                      ASLA
+  698 051E 59                      ROLB
+  699 051F 9B2F                    ADDA     F
+  700 0521 971F                    STAA     Z+1
+  701 0523 C900                    ADCB     #0
+  702 0525 08                      INX
+  703 0526 8D06                    BSR      TSTN
+  704 0528 25E3                    BCS      GN2
+  705 052A 961F                    LDAA     Z+1
+  706 052C 0D                      SEC
+  707 052D 39           NOTN       RTS
+  708                   *
+  709 052E BD05B3       TSTN       JSR      SKB8
+  710 0531 8130                    CMPA     #'0
+  711 0533 0C                      CLC
+  712 0534 2D02                    BLT      *+4
+  713 0536 813A                    CMPA     #$3A
+  714 0538 39           T3         RTS
+  715                   *
+  716 0539 8D33         TERM       BSR      FACT
+  717 053B 8D76         T1         BSR      SKB8
+  718 053D 812A                    CMPA     #'*
+  719 053F 260B                    BNE      T2
+  720 0541 8D14                    BSR      FACT2
+  721 0543 BD03F2                  JSR      MULT
+  722 0546 DF80         T11        STX      EXSP
+  723 0548 DE24                    LDX      PX
+  724 054A 20EF                    BRA      T1
+  725                   *
+  726 054C 812F         T2         CMPA     #'/
+  727 054E 26E8                    BNE      T3
+  728 0550 8D05                    BSR      FACT2
+  729 0552 BD03A3                  JSR      DIVIDE
+  730 0555 20EF                    BRA      T11
+  731                   *
+  732 0557 8D15         FACT2      BSR      FACT
+  733 0559 7E04DB                  JMP      SAVE
+  734                   *
+  735 055C 08           HEXA2      INX
+  736 055D BD02D6                  JSR      HEXA
+  737 0560 2032                    BRA      PUSH
+  738                   *
+  739 0562 8D0A         PEEK       BSR      FACT
+  740 0564 BD06A9                  JSR      POP
+  741 0567 8D63                    BSR      TAX
+  742 0569 A600                    LDAA     0,X
+  743 056B 5F                      CLRB
+  744 056C 2024                    BRA      PUSH-2
+  745                   *
+  746 056E 08           FACT       INX
+  747 056F 8D95                    BSR      GETN
+  748 0571 2521                    BCS      PUSH
+  749 0573 8123                    CMPA     #'#
+  750 0575 27EB                    BEQ      PEEK
+  751 0577 8124                    CMPA     #'$
+  752 0579 27E1                    BEQ      HEXA2
+  753 057B DF24                    STX      PX
+  754 057D CE08F7                  LDX      #TABLE3
+  755 0580 BD030C       OPRATE     JSR      SEARCH
+  756 0583 A601                    LDAA     1,X
+  757 0585 36                      PSHA
+  758 0586 A600                    LDAA     0,X
+  759 0588 36                      PSHA
+  760 0589 DE24                    LDX      PX
+  761 058B 39                      RTS
+  762                   *
+  763 058C 8D3E         FVAR       BSR      TAX
+  764 058E A601                    LDAA     1,X
+  765 0590 E600                    LDAB     0,X
+  766 0592 DE24                    LDX      PX
+  767 0594 DF1E         PUSH       STX      Z
+  768 0596 DE80                    LDX      EXSP
+  769 0598 09                      DEX
+  770 0599 09                      DEX
+  771 059A 9C2A                    CPX      BUFEND
+  772 059C 2F08                    BLE      ERR150
+  773 059E BD04A0       PUSH2      JSR      STAX
+  774 05A1 DF80         PUSH3      STX      EXSP
+  775 05A3 DE1E                    LDX      Z
+  776 05A5 39                      RTS
+  777                   *
+  778 05A6 C696         ERR150     LDAB     #150
+  779 05A8 7E085D       ER         JMP      ERRMSG
+  780                   *
+  781 05AB C6A0         ERR160     LDAB     #160
+  782 05AD 20F9                    BRA      ER
+  783                   *
+  784 05AF C6AA         ERR170     LDAB     #170
+  785 05B1 20F5                    BRA      ER
+  786                   *
+  787 05B3 7E045F       SKB8       JMP      SKB
+  788                   *
+  789 05B6 8D68         NOTFNC     BSR      TSTV
+  790 05B8 24D2                    BCC      FVAR
+  791 05BA A600                    LDAA     0,X
+  792 05BC 8128                    CMPA     #'(
+  793 05BE 26EB                    BNE      ERR160
+  794 05C0 08                      INX
+  795 05C1 BD04E0       FACT9      JSR      EXPR
+  796 05C4 8DED                    BSR      SKB8
+  797 05C6 8129                    CMPA     #')
+  798 05C8 26E1                    BNE      ERR160
+  799 05CA 08                      INX
+  800 05CB 39                      RTS
+  801                   *
+  802 05CC DF24         TAX        STX      PX
+  803 05CE 971F                    STAA     Z+1
+  804 05D0 D71E                    STAB     Z
+  805 05D2 DE1E                    LDx      Z
+  806 05D4 39                      RTS
+  807                   *
+  808 05D5 BD04E0       MOD        JSR      EXPR
+  809 05D8 A600                    LDAA     0,X
+  810 05DA 812C                    CMPA     #',
+  811 05DC 26D1                    BNE      ERR170
+  812 05DE 08                      INX
+  813 05DF 8DE0         MOD2       BSR      FACT9
+  814 05E1 DF1E                    STX      Z
+  815 05E3 DE80                    LDX      EXSP
+  816 05E5 BD03A3                  JSR      DIVIDE
+  817 05E8 20B4                    BRA      PUSH2
+  818                   *
+  819 05EA 9621         RANDOM     LDAA     RND+1
+  820 05EC D620                    LDAB     RND
+  821 05EE DB21                    ADDB     RND+1
+  822 05F0 8995                    ADCA     #$95
+  823 05F2 C9AB                    ADCB     #$AB
+  824 05F4 D721                    STAB     RND+1
+  825 05F6 9720                    STAA     RND
+  826 05F8 8D9A                    BSR      PUSH
+  827 05FA 20E3                    BRA      MOD2
+  828                   *
+  829 05FC 8D02         USER       BSR      USER2
+  830 05FE 2092                    BRA      PUSH-2
+  831                   *
+  832 0600 8D18         USER2      BSR      ARG2
+  833 0602 36                      PSHA
+  834 0603 37                      PSHB
+  835 0604 8D0D                    BSR      ARG
+  836 0606 36                      PSHA
+  837 0607 37                      PSHB
+  838 0608 8D09                    BSR      ARG
+  839 060A 36                      PSHA
+  840 060B 37                      PSHB
+  841 060C 07                      TPA
+  842 060D 36                      PSHA
+  843 060E 8DB4                    BSR      FACT9+3
+  844 0610 DF24                    STX      PX
+  845 0612 3B                      RTI
+  846                   *
+  847 0613 A600         ARG        LDAA     0,X
+  848 0615 812C                    CMPA     #',
+  849 0617 2604                    BNE      NONE
+  850 0619 08                      INX
+  851 061A 7E06A7       ARG2       JMP      EXPRPP
+  852                   *
+  853 061D 4F           NONE       CLRA
+  854 061E 5F                      CLRB
+  855 061F 39                      RTS
+  856                   *
+  857 0620 8D91         TSTV       BSR      SKB8
+  858 0622 8140                    CMPA     #$40
+  859 0624 270C                    BEQ      ARRAY
+  860 0626 8141                    CMPA     #'A
+  861 0628 2526                    BCS      NOTV
+  862 062A 815A                    CMPA     #'Z
+  863 062C 2222                    BHI      NOTV
+  864 062E 48                      ASLA
+  865 062F 5F                      CLRB
+  866 0630 08                      INX
+  867 0631 39                      RTS
+  868                   *
+  869 0632 BD056E       ARRAY      JSR      FACT
+  870 0635 BD06A9                  JSR      POP
+  871 0638 C5C0                    BITB     #$C0
+  872 063A 2611                    BNE      ERR11
+  873 063C 0D                      SEC
+  874 063D 49                      ROLA
+  875 063E 59                      ROLB
+  876 063F 9BB9                    ADDA     PREND+1
+  877 0641 D9B8                    ADCB     PREND
+  878 0643 D1BA                    CMPB     RAMEND
+  879 0645 2602                    BNE      *+4
+  880 0647 91BA                    CMPA     RAMEND*1
+  881 0649 2402                    BCC      ERR11
+  882 064B 0C                      CLC
+  883 064C 39                      RTS
+  884                   *
+  885 064D 7E0227       ERR11      JMP      ERR110
+  886                   *
+  887 0650 0D           NOTV       SEC
+  888 0651 39                      RTS
+  889                   *
+  890 0652 BD04AF       TSTEQ2     JSR      TSTEQ
+  891 0655 C6B4         ERR180     LDAB     #180
+  892 0657 7E085D       ERR19      JMP      ERRMSG
+  893                   *
+  894 065A BD0620       LET3       JSR      TSTV
+  895 065D 25F6                    BCS      ERR180
+  896 065F 971D         LET4       STAA     W+1
+  897 0661 D71C                    STAB     W
+  898 0663 8DED                    BSR      TSTEQ2
+  899 0665 8D40                    BSR      EXPRPP
+  900 0667 DF24                    STX      PX
+  901 0669 DE1C                    LDX      W
+  902 066B 39                      RTS
+  903                   *
+  904 066C C6BE         ERR190     LDAB     #190
+  905 066E 20E7                    BRA      ERR19
+  906                   *
+  907 0670 5F           THEN       CLRB
+  908 0671 37                      PSHB
+  909 0672 BD0506                  JSR      GETN
+  910 0675 254F                    BCS      GOTO2
+  911 0677 7E02BB                  JMP      STMT3
+  912                   *
+  913 067A BD056E       POKE       JSR      FACT
+  914 067D 8D2A                    BSR      POP
+  915 067F 8DDE                    BSR      LET4
+  916 0681 16                      TAB
+  917 0682 2063                    BRA      LET2
+  918                   *
+  919 0684 9F26         PSX        STS      SP
+  920 0686 35                      TXS
+  921 0687 DEBC                    LDX      SUBSP
+  922 0689 8C1F4A                  CPX      #STACK+3
+  923 068C 27DE                    BEQ      ERR190
+  924 068E 09                      DEX
+  925 068F 09                      DEX
+  926 0690 AF00                    STS      0,X
+  927 0692 DFBC         RESTR      STX      SUBSP
+  928 0694 30                      TSX
+  929 0695 9E26                    LDS      SP
+  930 0697 39                      RTS
+  931                   *
+  932 0698 DEBC         PLX        LDX      SUBSP
+  933 069A 8C1F80                  CPX      #SUBSTK
+  934 069D 27CD                    BEQ      ERR190
+  935 069F 9F26                    STS      SP
+  936 06A1 AE00                    LDS      0,X
+  937 06A3 08                      INX
+  938 06A4 08                      INX
+  939 06A5 20EB                    BRA      RESTR
+  940                   *
+  941 06A7 8D16         EXPRPP     BSR      EXPR7
+  942 06A9 DF1E         POP        STX      Z
+  943 06AB DE80                    LDX      EXSP
+  944 06AD 8C0080                  CPX      #EXSTK
+  945 06B0 27A3                    BEQ      ERR180
+  946 06B2 A601                    LDAA     1,X
+  947 06B4 E600                    LDAB     0,X
+  948 06B6 08                      INX
+  949 06B7 08                      INX
+  950 06B8 DF80                    STX      EXSP
+  951 06BA DE1E                    LDX      Z
+  952 06BC 39                      RTS
+  953 06BD DE24         EXPR9      LDX      PX
+  954 06BF 7E04E0       EXPR7      JMP      EXPR
+  955                   *
+  956 06C2 4F           GOTO       CLRA
+  957 06C3 36           GOSUB      PSHA
+  958 06C4 8DE1                    BSR      EXPRPP
+  959 06C6 BD01A6       GOTO2      JSR      SETLN
+  960 06C9 32                      PULA
+  961 06CA 4D                      TSTA
+  962 06CB 2702                    BEQ      *+4
+  963 06CD 8DB5                    BSR      PSX
+  964 06CF BD0273                  JSR      FINDER
+  965 06D2 2404                    BCC      *+6
+  966 06D4 C6C8         ERR200     LDAB     #200
+  967 06D6 2055                    BRA      ERR22
+  968                   *
+  969 06D8 7E02B0                  JMP      STMT
+  970                   *
+  971 06DB BD045F       LET        JSR      SKB
+  972 06DE 8123                    CMPA     #'#
+  973 06E0 2798                    BEQ      POKE
+  974 06E2 BD065A       LET1       JSR      LET3
+  975 06E5 A701                    STAA     1,X
+  976 06E7 E700         LET2       STAB     0,X
+  977 06E9 DE24                    LDX      PX
+  978 06EB 39                      RTS
+  979                   *
+  980 06EC 8DF4         FOR        BSR      LET1
+  981 06EE 961D                    LDAA     W+1
+  982 06F0 D61C                    LDAB     W
+  983 06F2 BD0594                  JSR      PUSH
+  984 06F5 BD0307                  JSR      SRCH2
+  985 06F8 8C0914                  CPX      #TOMSG
+  986 06FB 262E                    BNE      ERR210
+  987 06FD 8DBE                    BSR      EXPR9
+  988 06FF BD0307                  JSR      SRCH2
+  989 0702 8C091A                  CPX      #STPMSG
+  990 0705 2708                    BEQ      FOR1
+  991 0707 8601                    LDAA     #1
+  992 0709 5F                      CLRB
+  993 070A BD0592                  JSR      PUSH-2
+  994 070D 2002                    BRA      *+4
+  995                   *
+  996 070F 8DAC         FOR1       BSR      EXPR9
+  997 0711 DF24                    STX      PX
+  998 0713 9625                    LDAA     PX+1
+  999 0715 D624                    LDAB     PX
+ 1000 0717 BD0594                  JSR      PUSH
+ 1001 071A 961D                    LDAA     W+1
+ 1002 071C D61C                    LDAB     W
+ 1003 071E DEBE                    LDX      FORSP
+ 1004 0720 8D1B         FOR3       BSR      TST2
+ 1005 0722 240C                    BCC      FOR4
+ 1006 0724 DEBE                    LDX      FORSP
+ 1007 0726 8C00C0                  CPX      #FORSTK-64
+ 1008 0729 2607                    BNE      FOR4+2
+ 1009 072B C6D2         ERR210     LDAB     #210
+ 1010 072D 7E085D       ERR22      JMP      ERRMSG
+ 1011                   *
+ 1012 0730 8D58         FOR4       BSR      INX8
+ 1013 0732 8D10                    BSR      FORPSH
+ 1014 0734 204F                    BRA      NEXT5
+ 1015                   *
+ 1016 0736 BD0300       TSTSTK     JSR      CMPX
+ 1017 0739 2708                    BEQ      TST3
+ 1018 073B 8D4D                    BSR      INX8
+ 1019 073D 8C0100       TST2       CPX      #FORSTK
+ 1020 0740 26F4                    BNE      TSTSTK
+ 1021 0742 0D                      SEC
+ 1022 0743 39           TST3       RTS
+ 1023                   *
+ 1024 0744 8D00         FORPSH     BSR      *+2
+ 1025 0746 8D00                    BSR      *+2
+ 1026 0748 BD06A9                  JSR      POP
+ 1027 074B 09                      DEX
+ 1028 074C 09                      DEX
+ 1029 074D 7E04A0       STAX2      JMP      STAX
+ 1030 0750 C6DC         ERR220     LDAB     #220
+ 1031 0752 20D9                    BRA      ERR22
+ 1032                   *
+ 1033 0754 BD0620       NEXT       JSR      TSTV
+ 1034 0757 DF24                    STX      PX
+ 1035 0759 DEBE                    LDX      FORSP
+ 1036 075B 2404                    BCC      *+6
+ 1037 075D A601                    LDAA     1,X
+ 1038 075F E600                    LDAB     0,X
+ 1039 0761 8DDA                    BSR      TST2
+ 1040 0763 25EB                    BCS      ERR220
+ 1041 0765 DFBE                    STX      FORSP
+ 1042 0767 A605                    LDAA     5,X
+ 1043 0769 E604                    LDAB     4,X
+ 1044 076B EE00                    LDX      0,X
+ 1045 076D BD049C                  JSR      ADD3
+ 1046 0770 DEBE                    LDX      FORSP
+ 1047 0772 E102                    CMPB     2,X
+ 1048 0774 0D                      SEC
+ 1049 0775 2D07                    BLT      NEXT4
+ 1050 0777 0C                      CLC
+ 1051 0778 2E04                    BGT      NEXT4
+ 1052 077A A103                    CMPA     3,X
+ 1053 077C 2713                    BEQ      AGAIN
+ 1054 077E 46           NEXT4      RORA
+ 1055 077F A804                    EORA     4,X
+ 1056 0781 2B0E                    BMI      AGAIN
+ 1057 0783 8D05                    BSR      INX8
+ 1058 0785 DFBE         NEXT5      STX      FORSP
+ 1059 0787 DE24                    LDX      PX
+ 1060 0789 39                      RTS
+ 1061                   *
+ 1062 078A 8D00         INX8       BSR      *+2
+ 1063 078C 08                      INX
+ 1064 078D 08                      INX
+ 1065 078E 08                      INX
+ 1066 078F 08                      INX
+ 1067 0790 39                      RTS
+ 1068                   *
+ 1069 0791 EE06         AGAIN      LDX      6,X
+ 1070 0793 39                      RTS
+ 1071                   *
+ 1072 0794 DF1C         INPUT      STX      W
+ 1073 0796 961C                    LDAA     W
+ 1074 0798 2741                    BEQ      ERR10
+ 1075 079A DE2A                    LDX      BUFEND
+ 1076 079C DF1A                    STX      V
+ 1077 079E DE1C                    LDX      W
+ 1078 07A0 BD037B                  JSR      PQUOTE
+ 1079 07A3 2602                    BNE      IN2
+ 1080 07A5 8D37                    BSR      TSTCM
+ 1081 07A7 BD0620       IN2        JSR      TSTV
+ 1082 07AA 252F                    BCS      ERR10
+ 1083 07AC 36                      PSHA
+ 1084 07AD 37                      PSHB
+ 1085 07AE DF1C                    STX      W
+ 1086 07B0 DE1A                    LDX      V
+ 1087 07B2 8D37                    BSR      SKB1
+ 1088 07B4 2609                    BNE      IN3
+ 1089 07B6 863F                    LDAA     #'?
+ 1090 07B8 8D36                    BSR      OUT3
+ 1091 07BA 8D32                    BSR      OUTS
+ 1092 07BC BD012C                  JSR      GL2
+ 1093 07BF BD06A7       IN3        JSR      EXPRPP
+ 1094 07C2 8D1A                    BSR      TSTCM
+ 1095 07C4 DF1A                    STX      V
+ 1096 07C6 30                      TSX
+ 1097 07C7 EE00                    LDX      0,X
+ 1098 07C9 31                      INS
+ 1099 07CA 31                      INS
+ 1100 07CB BD04A0                  JSR      STAX
+ 1101 07CE DE1C                    LDX      W
+ 1102 07D0 8D19                    BSR      SKB1
+ 1103 07D2 270F                    BEQ      IN4
+ 1104 07D4 812C                    CMPA     #',
+ 1105 07D6 2603                    BNE      ERR10
+ 1106 07D8 08                      INX
+ 1107 07D9 20CC                    BRA      IN2
+ 1108                   *
+ 1109 07DB 7E016B       ERR10      JMP      ERR100
+ 1110                   *
+ 1111 07DE 8D04         TSTCM      BSR      TSTCM2
+ 1112 07E0 2601                    BNE      *+3
+ 1113 07E2 08                      INX
+ 1114 07E3 39           IN4        RTS
+ 1115                   *
+ 1116 07E4 36           TSTCM2     PSHA
+ 1117 07E5 8D04                    BSR      SKB1
+ 1118 07E7 812C                    CMPA     #',
+ 1119 07E9 32                      PULA
+ 1120 07EA 39                      RTS
+ 1121                   *
+ 1122 07EB 7E045F       SKB1       JMP      SKB
+ 1123                   *
+ 1124 07EE 8620         OUTS       LDAA     #$20
+ 1125 07F0 7E0448       OUT3       JMP      OUT
+ 1126                   *
+ 1127 07F3 5F           LIST       CLRB
+ 1128 07F4 8601                    LDAA     #1
+ 1129 07F6 BD01A6                  JSR      SETLN
+ 1130 07F9 C67F                    LDAB     #$7F
+ 1131 07FB 86FF                    LDAA     #$FF
+ 1132 07FD 36                      PSHA
+ 1133 07FE 8DEB                    BSR      SKB1
+ 1134 0800 32                      PULA
+ 1135 0801 270E                    BEQ      LIST2
+ 1136 0803 BD06A7                  JSR      EXPRPP
+ 1137 0806 BD01A6                  JSR      SETLN
+ 1138 0809 8DD9                    BSR      TSTCM2
+ 1139 080B 2604                    BNE      LIST2
+ 1140 080D 08                      INX
+ 1141 080E BD06A7                  JSR      EXPRPP
+ 1142 0811 9727         LIST2      STAA     SP+1
+ 1143 0813 D726                    STAB     SP
+ 1144 0815 DE26                    LDX      SP
+ 1145 0817 2605                    BNE      *+7
+ 1146 0819 CE7FFF                  LDX      #32767
+ 1147 081C DF26                    STX      SP
+ 1148 081E BD027B                  JSR      LNFD
+ 1149 0821 2002                    BRA      *+4
+ 1150                   *
+ 1151 0823 8D10         LIST3      BSR      LISTX
+ 1152 0825 9627                    LDAA     SP+1
+ 1153 0827 D626                    LDAB     SP
+ 1154 0829 BD0300                  JSR      CMPX
+ 1155 082C 24F5                    BCC      LIST3
+ 1156 082E 8603                    LDAA     #3
+ 1157 0830 8DBE                    BSR      OUT3
+ 1158 0832 7E01CB       C9         JMP      CONTRL
+ 1159                   *
+ 1160 0835 8602         LISTX      LDAA     #2
+ 1161 0837 8DB7                    BSR      OUT3
+ 1162 0839 8D12                    BSR      PNUM9
+ 1163 083B 08                      INX
+ 1164 083C 8620                    LDAA     #$20
+ 1165 083E 8D14                    BSR      PD2
+ 1166 0840 DF1E         NWLINE     STX      Z
+ 1167 0842 CE0937                  LDX      #CRLF
+ 1168 0845 8D10                    BSR      PD
+ 1169 0847 7F002E                  CLR      CHCNT
+ 1170 084A DE1E         LX2        LDX      Z
+ 1171 084C 39                      RTS
+ 1172                   *
+ 1173 084D DF1E         PNUM9      STX      Z
+ 1174 084F BD040A                  JSR      PNUM
+ 1175 0852 20F6                    BRA      LX2
+ 1176                   *
+ 1177 0854 8D9A         PD2        BSR      OUT3
+ 1178 0856 08                      INX
+ 1179 0857 A600         PD         LDAA     0,X
+ 1180 0859 26F9                    BNE      PD2
+ 1181 085B 08                      INX
+ 1182 085C 39                      RTS
+ 1183                   *
+ 1184 085D 8E1F47       ERRMSG     LDS      #STACK
+ 1185 0860 8DDE                    BSR      NWLINE
+ 1186 0862 CE092B                  LDX      #ERR
+ 1187 0865 8DF0                    BSR      PD
+ 1188 0867 17                      TBA
+ 1189 0868 5F                      CLRB
+ 1190 0869 8D0D                    BSR      PRACC
+ 1191 086B DE28                    LDX      LNADRS
+ 1192 086D 2BC3                    BMI      C9
+ 1193 086F 8DCF                    BSR      NWLINE
+ 1194 0871 8DC2                    BSR      LISTX
+ 1195 0873 20BD                    BRA      C9
+ 1196                   *
+ 1197 0875 BD06A7       PREXPR     JSR      EXPRPP
+ 1198 0878 36           PRACC      PSHA                 e
+ 1199 0879 37                      PSHB
+ 1200 087A DF1E                    STX      Z
+ 1201 087C 30                      TSX
+ 1202 087D 8DD0                    BSR      PNUM9+2
+ 1203 087F 33                      PULB
+ 1204 0880 32                      PULA
+ 1205 0881 39                      RTS
+ 1206                   *
+ 1207 0080              N          EQU      $80
+ 1208 0882              TABLE2     EQU      *
+ 1209 0882 4C4953                  FCB      'LIS
+ 1210 0885 D4                      FCB      N+'T
+ 1211 0886 07F3                    FDB      LIST
+ 1212 0888 4C4F41                  FCB      'LOA
+ 1213 088B C4                      FCB      N+'D
+ 1214 088C 0196                    FDB      LOAD
+ 1215 088E 5255                    FCB      'RU
+ 1216 0890 CE                      FCB      N+'N
+ 1217 0891 02AC                    FDB      RUN
+ 1218 0893 45                      FCB      'E
+ 1219 0894 D8                      FCB      N+'X
+ 1220 0895 E0D0                    FDB      RESET
+ 1221 0897 415554                  FCB      'AUT
+ 1222 089A CF                      FCB      N+'O
+ 1223 089B 019C                    FDB      AUTO
+ 1224 089D 4E45                    FCB      'NE
+ 1225 089F D7                      FCB      N+'W
+ 1226 08A0 01C9                    FDB      NEW
+ 1227 08A2              TABLE      EQU      *
+ 1228 08A2 4C45                    FCB      'LE
+ 1229 08A4 D4                      FCB      N+'T
+ 1230 08A5 06DB                    FDB      LET
+ 1231 08A7 49                      FCB      'I
+ 1232 08A8 C6                      FCB      N+'F
+ 1233 08A9 0295                    FDB      IF
+ 1234 08AB 474F54                  FCB      'GOT
+ 1235 08AE CF                      FCB      N+'O
+ 1236 08AF 06C2                    FDB      GOTO
+ 1237 08B1 474F5355                FCB      'GOSU
+ 1238 08B5 C2                      FCB      N+'B
+ 1239 08B6 06C3                    FDB      GOSUB
+ 1240 08B8 5245                    FCB      'RE
+ 1241 08BA D4                      FCB      N+'T
+ 1242 08BB 0698                    FDB      PLX
+ 1243 08BD 4E4558                  FCB      'NEX
+ 1244 08C0 D4                      FCB      N+'T
+ 1245 08C1 0754                    FDB      NEXT
+ 1246 08C3 464F                    FCB      'FO
+ 1247 08C5 D2                      FCB      N+'R
+ 1248 08C6 06EC                    FDB      FOR
+ 1249 08C8 544845                  FCB      'THE
+ 1250 08CB CE                      FCB      N+'N
+ 1251 08CC 0670                    FDB      THEN
+ 1252 08CE 5245                    FCB      'RE
+ 1253 08D0 CD                      FCB      N+'M
+ 1254 08D1 026E                    FDB      NXTL2
+ 1255 08D3 5052494E                FCB      'PRIN
+ 1256 08D7 D4                      FCB      N+'T
+ 1257 08D8 0335                    FDB      PRINT
+ 1258 08DA 494E5055                FCB      'INPU
+ 1259 08DE D4                      FCB      N+'T
+ 1260 08DF 0794                    FDB      INPUT
+ 1261 08E1 50                      FCB      'P
+ 1262 08E2 D2                      FCB      N+'R
+ 1263 08E3 0335                    FDB      PRINT
+ 1264 08E5 49                      FCB      'I
+ 1265 08E6 CE                      FCB      N+'N
+ 1266 08E7 0794                    FDB      INPUT
+ 1267 08E9 53544F                  FCB      'STO
+ 1268 08EC D0                      FCB      N+'P
+ 1269 08ED 01AB                    FDB      STOP
+ 1270 08EF 454E                    FCB      'EN
+ 1271 08F1 C4                      FCB      N+'D
+ 1272 08F2 01CB                    FDB      CONTRL
+ 1273 08F4 FF                      FCB      $FF
+ 1274 08F5 06DB                    FDB      LET
+ 1275                   *
+ 1276 08F7              TABLE3     EQU      *
+ 1277 08F7 524E44                  FCB      'RND
+ 1278 08FA A8                      FCB      N+'(
+ 1279 08FB 05EA                    FDB      RANDOM
+ 1280 08FD 414253                  FCB      'ABS
+ 1281 0900 A8                      FCB      N+'(
+ 1282 0901 04A5                    FDB      ABS
+ 1283 0903 4D4F44                  FCB      'MOD
+ 1284 0906 A8                      FCB      N+'(
+ 1285 0907 05D5                    FDB      MOD
+ 1286 0909 555352                  FCB      'USR
+ 1287 090C A8                      FCB      N+'(
+ 1288 090D 05FC                    FDB      USER
+ 1289 090F FF                      FCB      $FF
+ 1290 0910 05B6                    FDB      NOTFNC
+ 1291                   *
+ 1292 0912              TABLE4     EQU      *
+ 1293 0912 54                      FCB      'T
+ 1294 0913 CF                      FCB      N+'O
+ 1295 0914 1234         TOMSG      FDB      $1234
+ 1296 0916 535445                  FCB      'STE
+ 1297 0919 D0                      FCB      N+'P
+ 1298 091A ABCD         STPMSG     FDB      $ABCD
+ 1299                   *
+ 1300 091C              TABLE5     EQU      *
+ 1301 091C 434852                  FCB      'CHR
+ 1302 091F A8                      FCB      N+'(
+ 1303 0920 0369                    FDB      CHR
+ 1304 0922 544142                  FCB      'TAB
+ 1305 0925 A8                      FCB      N+'(
+ 1306 0926 036E                    FDB      TAB
+ 1307 0928 FF                      FCB      $FF
+ 1308 0929 0875                    FDB      PREXPR
+ 1309                   *
+ 1310 092B 4552524F5220 ERR        FCC      /ERROR /
+ 1311 0931 00                      FCB      0
+ 1312 0932 5245414459   RDYMSG     FCC      /READY/
+ 1313                   *----------------------
+ 1314                   *CRLF       FCB      $0D,$0A,$FF,$FF,$FF,$FF,$FF,0
+ 1315                   *
+ 1316 0937 0D0A00       CRLF       FCB      $0D,$0A,0
+ 1317                   *
+ 1318 093A B68018       POLCAA     LDAA     ACIACS
+ 1319 093D 47                      ASRA
+ 1320 093E 39                      RTS
+ 1321                   *----------------------
+ 1322 093F BDE1AC       INFFF      JSR      INEEE
+ 1323 0942 8160                    CMPA     #$60
+ 1324 0944 2502                    BCS      *+4
+ 1325 0946 8020                    SUBA     #$20
+ 1326 0948 8125                    CMPA     #$25
+ 1327 094A 2602                    BNE      *+4
+ 1328 094C 8640                    LDAA     #$40
+ 1329 094E 39                      RTS
+ 1330                   *
+ 1331 094F                         END
