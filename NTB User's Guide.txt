@@ -1,0 +1,516 @@
+
+************************************
+*                                  *
+* NAKAMOZU TINY BASIC USER'S GUIDE *
+*                                  *
+* version 6.0 (video graphics)     *
+* by Haruo Yamashita, Oct, 1978    *
+*                                  *
+*    this version 6.1 modified     *
+*    for MIKBUG/SWTBUG and TTY     *
+*    by Dave Hassler, June, 2025   *
+*                                  *
+************************************
+
+INTRODUCTION
+============
+
+   For Haruo Yamashita's account of the origins of Nakamozu Tiny BASIC, and
+for many pages of technical information on the language, please see:
+	https://hyamasynth.web.fc2.com/ACII_NTB/ACII_NTB.html.
+   This BASIC is modeled on Dendai Tiny BASIC, by Toshiaki Yasuda, described
+in the BLUE BACKS book "Use My Computer: Peripheral Devices and Actual
+Usage."  There are also elements of VTL-2 and GAME.  All of these small 6800
+high-level languages were quite popular in the late 1970s and early '80s in
+Japan, and featured prominently in the hobbyist magazine "ASCII".
+   Nakamozu Tiny BASIC adds several features and statement to the Denki
+University version (Dendai Tiny BASIC), most notably:
+
+		DO/UNTIL looping
+		DATA/READ/RESTORE
+		logical AND/OR/XOR
+		up to 10 array variables
+		a Commodore-like GETKEY (v.3.5)
+		formatted printing (PRINT USING)
+		commands to display graphic characters on video
+
+   Yamashita's 6.0 version was written specifically for use with the TVD-02
+video board, although there were patches for the Hitachi HR-TV board, as
+well.  This version, 6.1, bypasses the graphics/video I/O and interfaces
+with the user via a serial terminal.
+
+
+NUMBERS AND MATHEMATICAL OPERATORS
+==================================
+
+   Integer range:  -32768 to 32767
+	   	    $0000 to $FFFF (negative decimal numbers start at $8000
+			and count *down* as the hexidecimal counts *up*.
+			E.g., $8000 = -32768, $FFFA = -6, etc.)
+
+   Math Operators:  + - * /
+
+   Precedence: 	1. unary -
+	  	2. multiplication and division
+		3. addition and subtraction
+
+   Order:  Precedence, then left-to-right
+	   Parentheses may be used to change the order of operation.
+		E.g., given X=-7:   10 A=(17+(12-X))*11   will result in
+		A=396, not 106, as if there were no parentheses (the unary
+		- sign before X gets processed first).
+
+   Relational operators:  <		less than
+			  >		greater than
+			  =		equals
+			  <= or =<	less than or equal to
+			  >= or =>	greater than or equal to
+			  <> or ><	not equal
+
+
+VARIABLES, CONSTANTS, ARRAYS, ENTRY
+===================================
+
+   There are 27 integer variables: @, A-Z
+
+   "System variables" (ala VTL-02):
+	[ = Start of user RAM
+	\ = End of user program
+	] = Top of user RAM
+   These variables can be set much in the manner of VTL-2 or Apple Integer
+BASIC.  E.g., a program may lower the top of user RAM to set up a protected
+area for a machine language routine:   10 ]=$77FF    ] is initially set to
+$33FF, which was the top of user RAM in Yamashita's 6800 SBC and leaves about
+10K for a user program; the start of user RAM (the [ variable) is set to
+$0C60.  These, of course, can be changed, either from within a program, or
+in direct mode entry.  The amount of RAM left for the user's program can be
+determined by entering the following in "direct mode": 
+		 PRINT ]-\
+   Also, by changing these variables in direct mode, multiple programs
+can be placed into memory.
+
+   There are 10 array variables: %0 to %9, accessed with the form %n(x).
+   The arrays grow upward at 2 bytes per element and are only constrained
+by the amount of user RAM.  They are "dimensioned" by assigning each a
+starting point in memory.  E.g., to reserve memory for arrays %0, %1, and %2
+of 10, 20, and 15 elements, respectively, the following line would be at the
+beginning of the user's program:
+		10 %0=\+1 : %1=%0+20 : %2=%1+40
+   This places array %0 just after the end of the user's program, %1 20 bytes
+(10 elements) farther up, and %2 40 bytes (20 elements) past %1.  At this
+point, %2 is "open-ended".  The base address for arrays does not need to be
+the address of the end of the program (\); it can be any valid RAM address
+that will not interfere with the BASIC program.
+   Further, the array variables (also called "index variables" by Yamashita)
+can also be used as simple integer variables, each holding a 16-bit value,
+but should not be subscripted when used that way.
+   Since there is no limit to the effective address for offset, these index
+arrays can be used to store 6800 opcodes and the address called by USER for
+execution.  The arrays can be used similarly as string variables; see the
+NOTES section for an example.
+
+   One can use single alphabetic characters in expressions, with the letter
+replaced by its ASCII value:
+	10 X = "A" + "C" : PRINT X,CHR$ (X/2)
+will output "132      B".    Also:  10 A=GET$ : IF A = "N" THEN END
+   Otherwise, strings may only appear after PRINT, INPUT or STOP statements.
+String literals are enclosed in either single or double quote marks, which
+allows double quotes to appear inside a string.  E.g.,
+	10 P.'What do you mean by "You go first"?' 
+
+   Line numbers may be from 1 to 32767.  Program lines, including the line
+number, can be no longer than 71 characters.  Entry of program statements
+must be in uppercase, although strings may be in mixed case.  E.g.,
+	10 PRINT "I have no time for all this case nonsense."
+Program lines may contain multiple statements, seperated by a colon (:).     In a nod to Palo Alto Tiny BASIC by Dr. Li-Chen Wang, most commands,
+statements, and functions may be abbreviated, e.g., P. is the same as PRINT.
+
+
+COMMANDS
+========
+
+   Commands may only be used in direct mode (i.e., not within a program).
+
+LIST (L.)	LIST		list whole program
+		LIST 20   	list only line 20
+		LIST 20,40	list only lines 20 through 40
+		LIST 20,$8000	list from line 20 to end
+
+SAVE (S.)	Sets the output device to the cassette address and sends
+		text there as in a LIST.  See original Japanese user manual
+		from ASCII Magazine, and NTB source code, for details of use.
+		Unlikely to be needed with modern serial terminal emulators.
+
+LOAD (LO.)	Performs a NEW command, then sets the cassette for input.
+		See the NOTES section of this User's Guide for program
+		loading and saving with a modern serial terminal emulator.
+
+APPEND (AP.)	Like LOAD, but without the NEW routine.
+
+AUTO (A.)	Automatic line numbering for program entry.
+		AUTO n   where n => 1.  Numbering by 10s only.  Exit the
+		auto numbering mode with CTRL-C.
+
+NEW (N.)	Resets stack and memory pointers.  Does NOT clear user RAM
+		or variables.  To clear variables @-Z, enter the following
+		in direct mode:
+		   FOR I=0 TO $35:#(I)=0:NEXT I   press ENTER, then CTRL-C.
+		To clear user program:
+		   FOR I=[ TO \:#(I)=0:NEXT I     press ENTER, then CTRL-C.
+		To clear all user RAM:
+		   FOR I=[ TO ]:#(I)=0:NEXT I     press ENTER, then CTRL-C.
+		   (this takes about 10 seconds...)
+
+RUN		Begin execution of the user program.
+
+DEL (D.)	DEL 20		removes ALL program lines from 20 onward.
+
+EXIT (E.)	Quits BASIC and returns to SWTBUG (CONTRL at $E0E3).
+
+
+STATEMENTS
+==========
+
+   Statements marked with *** CANNOT be used in direct mode.
+   Nakamozu Tiny BASIC does not have a LET statement; instead, assignment
+statements are written directly, e.g.,   10 A=255
+
+FOR/TO/STEP	FOR A=1TO18STEP2	A will equal odd numbers 1 to 17
+(F.)					within this loop.  When finished,
+					A will equal 19.
+		Numbers may be replaced with variables and/or expressions.
+		If the STEP is 1, STEP may be omitted.  A variable, "index
+		variable", or array element may be used as the control
+		variable following FOR.  Each loop must have its own
+		unique control variable, and for/next loops may be nested
+		up to seven (7) levels.  FOR/NEXT loops have a seperate
+		stack in NTB, so they can be used in conjunction with
+		DO/UNTIL loops.
+
+NEXT (N.)	NEXT v		v must match the control variable of a FOR
+				statement.  In unnested loops, the variable
+				v may be omitted.
+
+DO		DO	Pairs with the UNTIL statement.  Replaces IF/GOTO
+			types of loops.  Uses the GOSUB/RETURN stack, and
+			nesting is allowed to 27 levels.
+
+UNTIL (U.)	UNTIL (expr.)	Loop within a DO structure until the
+				expression is true.  To exit prematurely
+				from a DO loop with an IF test, first reset
+				the stack with UNTIL1.
+
+GOTO (G.)	GOTO (expr.)	Jump to the line number referenced.
+				If the value of the expression is 0 (false),
+				simply go to the next statement after GOTO.
+
+
+GOSUB (GOS.)	GOSUB (expr.)	Jump to the subroutine line number
+				referenced.  A return address for the next
+				instruction is pushed onto the same stack
+				that DO/UNTIL uses.  If the value of the
+				expression is 0 (false), go to the next
+				statement after GOSUB.
+
+RET (R.)	RET (*program)	In a program, will pull a return address off
+				the GOSUB stack and branch to it.
+		RET (*direct)	Continues program execution after a STOP
+				statement is encountered during in a run.
+
+IF/THEN		IF (expr.) THEN* (stmt) : (stmt) : (stmt) ...
+   (T.)				If the expression evaluates to false (0),
+				none of the statements following THEN will
+				execute.  If the statement will be a GOTO,
+				a line number alone may follow THEN.  
+				*THEN is optional and may be omitted.  
+
+PRINT (P.)	PRINT (expr/string)	Several items may be printed with
+					a single PRINT statement.  When
+					are seperated by a comma (,) the
+					items will be printed at TAB stops
+		of 8 between them; if a semicolon (;) is used, items will
+		have no spaces between them.  Formatting can be added with
+		use of the functions TAB, CHR$, HDT, HDF, and USING.
+
+REM***		REM (text)	Used for non-executing, embedded comments.
+
+* (DATA)***	* 24,$BD,A+B,"D",%3(6)	If the example is placed on a 
+					program line with A=5, B=7 and, 
+					%3(6)=19, then the following line
+					would READ the data elements and
+					print them:
+			20 FOR I=1TO5:J=READ:PRINT J,:NEXT
+			Output:	24	189	12	68	19
+
+RESTORE***	RESTORE	(expr.)	The data pointer is set to the beginning of
+				the program by both END and RUN, and updated
+				as data is read.  RESTORE moves the data
+				pointer to the beginning of any line number. 
+				The expression/line number is mandatory.
+
+
+INPUT (IN.)***	INPUT "(string)",A,B,C...	If present, the string is
+						printed before input is
+						accepted.  A '?' will be
+		printed to prompt for input.  Input may be integers in hex
+		or decimal, variables, and/or expressions.
+
+END***		END	Stops execution of a program and returns to the
+			command line for direct mode input.
+
+
+STOP***		STOP "(string)"		If present, the string is printed
+					before execution stops, and a return
+					address is placed on the index
+			stack.  Entering RET in direct mode will resume
+			execution just after the STOP statement.
+
+# (POKE)	#(expr1)=expr2		Places the 8-bit value of expr2 into
+					memory at the address value of
+					expr1.	If expr1 is a single number 
+					(decimal or hex) or a variable, the
+					parentheses may be omitted.
+
+
+GENERAL FUNCTIONS
+=================
+
+   A function is an instruction used on the right side of an assignment
+statement and in expressions. All arguments can be (expressions).
+
+RND (R.)	A=RND(x)	Where X => 1 a random number between 0 and
+				X-1 is returned.  if X is negative, a random
+				number between X+1 and 0 is returned.  An
+				argument of 0 results in division by 0,
+				which causes an error.
+
+MOD (M.)	A=MOD or A=MOD(x,y)	If no agrument is given, MOD will
+					return the remainder of the most
+					recent division.  With arguments,
+					the remainder of X/Y is returned.
+					Y cannot equal 0.
+
+ABS (A.)	A=ABS(expr.)	Returns the absolute (positive) value of
+				the expression X.
+
+SGN (S.)	A=SGN(expr.)	Returns 1 (x>0), 0 (x=0), or -1 (x<0).
+
+AND		A=AND(x,y)	Returns logical AND of X and Y (16-bit).
+				NOT a conditional for use in IF/THEN.
+
+OR		A=OR(x,y)	Returns logical OR of X and Y (16-bit).
+				NOT a conditional for use in IF/THEN.
+
+XOR		A=XOR(x,y)	Returns logical XOR of X and Y (16-bit).
+
+READ (RE.)	A=READ or %7(X)=READ	Gets a value from the DATA list and
+					assigns the value to a variable.
+
+GET$ (G.)	A=GET$		Waits for input and assigns the ASCII value
+				of the key pressed and prints it. A carriage
+				return is not needed. Control codes may also
+				be entered.  No line breaks are printed.
+				Same function as Commodore BASIC v3.5
+				GETKEY statement.
+
+KEY		A=KEY		Polls ACIA for 1/20 second for a keypress.
+				ASCII code is returned if a key was pressed;
+				otherwise, the number 0 (NUL) is returned.
+				Use is similar to Commodore BASIC v.2 'GET':
+					10 A=KEY:IF A=0 THEN 10
+					20 IF A=3 THEN END:REM CTRL-C
+					30 P.CHR$(A),A:GOTO 10
+				***[This is an OPTIONAL patch for v6.1 as
+				    the original routine in v6.0 is for
+				    either an ASCII keyboard attached to the
+				    Hitachi H68TR 6800 trainer, or its on-
+				    board keypad.]
+
+# (PEEK)	A=#(expr.)	Returns the 8-bit value at address of expr.
+
+USER (U.)	A=USER(a,x,y)	Returns values of ACCB and ACCA just before
+				the called routine's final RTS, as a 16-bit
+				number.  
+				a arg. only: JSR to address a
+				a,x args.  : JSR to address a, pass x to the
+						Index Register (X)
+				a,x,y args.: JSR to address a, pass x to the
+						Index Register (X), pass y
+						to ACCB and ACCA as m.s.b.
+						and l.s.b., respectively.
+				If it is desired to only pass ACCA and/or
+				ACCB to the user's routine, use a "dummy"
+				value of 0 (or whatever) for x.
+
+
+PRINT FORMATTING FUNCTIONS
+==========================
+
+USING (U.)	P.USINGxy A	Prints variables and expressions in right-
+				justified, 6-characters-wide format.  May
+				only be used after a PRINT (or P.) statement.
+				The x and y parameters must immediately 
+		follow the word USING.  x can be the plus sign (+) to force
+		the + sign display, or any other character, likely the space
+		character, although all ASCII 32-95 are valid.  The y
+		parameter is the pad character from left, up to the first
+		digit of the expression.  Some examples (A=12, B=-333):
+			P.USING** A	-->	****12
+			P.USING** B	-->	-**333
+			P.USING+  A	-->	+   12	
+			P.USING   A	-->	    12
+			P.USING$  A	-->	$   12
+			P.USING*_ (A*B)	-->	-_3996
+		P.USING+ A;"  ";:P.USING+ B --> +   12  -  333
+
+TAB (T.)	P.TAB(expr.);A	Outputs the number of spaces equal to the
+				value of the expression, then a variable,
+				constant, or literal string.  If multiple
+				TABs are in a single line, and any has a 
+				value less than the one before it, the latter
+				will be ignored.
+
+CHR$ (C.)	P.CHR$(expr.)	Prints any ASCII code from 0-255, control
+				codes included*.  E.g., P.CHR$(12) will clear
+				the screen on most serial terminal emulators.
+				Also, P.CHR$ GET$+1, with input of the letter
+				S, will result in output of the letter T. 
+				Parentheses are optional.
+				*ASCII 6, 7, 17-20 are reserved for original
+				system sound ("beep") and cassette control.
+
+HDF		P.HDF(expr.)	Prints the expression as a four-digit
+				hexadecimal number.
+
+HDT		P.HDT(expr.)	Prints the expression as a two-digit
+				hexadecimal number.
+
+
+GRAPHICS STATEMENTS IN ORIGINAL VER. 6.0
+========================================
+
+   Use of these statements and functions in a program always results
+in the interpreter crashing, mainly due to the fact that it is highly
+unlikely you have a TVD-02 video board addressed at $3400...
+
+COPY*	Print the video screen to a printer (Yamashita's printer!).
+CLR	Blanks part or entire screen.
+CURS	Moves cursor to coordinate x,y.
+NEG	Inverts characters in video memory.
+!W	Makes character at video coordinate white.
+!B	Makes character at video coordinate black.
+!R	"Flips" character at video coordinate.
+!P	Function that returns state of a video coordinate.
+
+* COPY is overwritten when patched for SWTBUG/MIKBUG.  A test for Control-C
+  upon input via ACIA is at its address ($098C).
+
+
+ERROR CODES
+===========
+
+ 1   INPUT ERROR
+ 2   MEMORY FULL
+ 3   INVALID LINE NUMBER	Valid line numbers are 0 < n < 32768
+ 4   PRINT ERROR		Occurs with PRINT, INPUT, and STOP
+ 5   DIVIDE BY ZERO		Also: if RND(0) and MOD(n,0)
+ 6   ARITHMETIC STACK ERROR	Stack overflow, or parenthesis nesting depth
+ 7   ILLEGAL ARITHMETIC	
+ 8   MOD ERROR
+ 9   UNRECOGNIZED STATEMENT
+10   INDEX STACK ERROR		RET w/o GOSUB; UNTIL w/o DO; nesting >27
+11   LINE NUMBER NOT FOUND
+12   FOR/NEXT STACK ERROR	FOR/NEXT nesting >7
+13   NEXT WITHOUT FOR
+14   INDEX ARRAY ERROR
+15   GRAPHICS ERROR
+16   READ ERROR			No data to READ
+
+
+NOTES
+=====
+
+   Like a lot of things in the 6800 world, Nakamozu Tiny BASIC cold starts at
+$0100 and warm starts at $0103.
+
+   Loading and saving BASIC programs is a breeze.  To load a text file, set
+your terminal emulator to no handshaking, a character delay of 10 ms, and a
+line delay of 100 ms, which results in about 75 char/sec, or 5,400 bps.
+Heck, no one (certainly not a hobbyist) had a 4,800 bps modem in 1980, so
+loading programs this way actually puts one on the bleeding edge of
+technology!  :^)  To load a saved S13 file you previously punched, just load
+it from the monitor "at full throttle," warm start NTB, then set the \
+variable for end-of-program.
+
+   Saving a program is simply a matter of starting a text capture in the
+terminal, entering the LIST command, then closing/saving the capture.  This
+is exactly how NTB would save to the cassette tape recorder, by the way.
+You may have to "clean it up in post," but any modern text editor should be
+able to find and remove control and null characters.  You also could punch
+an S Record file from the address in the [ variable ($0C60) to that in \.
+
+   At $0B39 is the text string READY, preceded by a CRLF, and followed by the
+BEL character (ASCII 07).  If this is annoying (as it surely will be), patch
+in $00 at $0B40.  I guess you could disable the BEL in your serial terminal
+emulator, as well.
+
+   When editing NTB programs, an easy and fast way to make small changes is
+to cut-n-paste individual program lines from your modern text editor into the
+serial terminal emulator; Nakamuzo Tiny BASIC is more than fast enough to
+handle the pasting of a single line of code.
+
+   String variables, of a sort, are possible with use of the array variables.
+First dimension the variable(s), then READ in DATA to them in a loop; saved
+like this initially, the array can be printed from a DO/UNTIL loop, and
+later altered by the user during program execution.
+   To allow user input of a "string variable" using GET$ or KEY in a loop,
+and store the input in array elements.  E.g.:
+
+			10 %9=\+1:I=0
+			20 DO
+			30 A=GET$:I=I+1:%9(I)=A
+			40 UNTIL A=13
+			50 P.CHR$(13):I=1
+			60 DO
+			70 P.CHR$(%9(I));:I=I+1
+			80 UNTIL %9(I)=13
+
+
+
+CONCLUSION
+==========
+
+   This is, hands down, the best 6800 Tiny BASIC I have ever used.  It's the
+fastest and most capable of the herd.  Weighing in at 3,162 bytes (2,909
+without the graphics functions), it packs a big punch with 14 additional
+statements and functions over Dendai Tiny BASIC, all in only 500 extra bytes.
+The ability to have DO/UNTIL looping and real DATA/READ is worth the price
+of admission, alone.
+
+   To adapt for systems other than my homemade Monster-68 machine, only a few
+EQUates in the patch source code should need to be changed before 
+recompiling, most of them having to do with SWTBUG/MIKBUG; see the beginning
+of the original source code, plus the supplied patch (which is what you'll
+alter) to understand what needs to be changed.  Load in the original 1978
+S Record file   nakamozu1_orig.s19   and then load the edited patch over
+that.  Punch an S Record from $0100 to $0C5A, and that's your "good-to-go" file.  :^)
+
+   The graphics statements and functions could be made more-or-less 
+functional with a very simple character ROM, as is in the MC6847 (the video
+chip used in the Radio Shack Color Computers, among others).  The graphics
+capabilities of the TVD-02 board appear to have been limited to blocks and
+half blocks, and only in black and white.  Still, a color statement such as
+!C could be added, the graphics equates at the beginning changed, and some
+tweaking/rewriting of the existing graphics routines might get things going.
+
+   Major thanks to Haruo Yamashita for posting the source code and hex "dump
+file" on his website - more people should know about this Tiny BASIC version.
+I built the original nakamozu1_orig.s19 from the hex dump file, using the
+checksums provided...after I wrote a little checksum program to calculate
+them.  From there, I used the f9dasm disassembler to get some raw code, and
+shoved that into a spreadsheet, so I could start to rebuild an assembly
+source file with comments.  All materials are packeded up on my website at
+www.vanportmedia.com/hm68, or on github at 
+https://github.com/fishhack66/6800-6809-Stuff
+
+   Have fun!  Dave Hassler, June, 2025
