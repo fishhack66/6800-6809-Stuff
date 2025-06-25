@@ -32,7 +32,7 @@
 *    Assemble with AS0 Motorola 6800 Assembler,
 *    updated to ANSI-standard C by Jim Newman.
 *    (found at: https://github.com/JimInCA/motorola-6800-assembler)
-*    Linux: ./as0 TINYPILOT6800.ASM -l >> tinypilot6800.lst
+*    Linux: ./as0 TINYPILOT6800b.ASM -l >> tinypilot6800b.lst
 *    A Motorola S-Record and a full listing file will be output.
 
 **** PAGE ZERO REFERENCES
