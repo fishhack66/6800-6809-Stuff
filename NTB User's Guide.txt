@@ -122,7 +122,8 @@ allows double quotes to appear inside a string.  E.g.,
 number, can be no longer than 71 characters.  Entry of program statements
 must be in uppercase, although strings may be in mixed case.  E.g.,
 	10 PRINT "I have no time for all this case nonsense."
-Program lines may contain multiple statements, seperated by a colon (:).     In a nod to Palo Alto Tiny BASIC by Dr. Li-Chen Wang, most commands,
+Program lines may contain multiple statements, seperated by a colon (:). 
+In a nod to Palo Alto Tiny BASIC by Dr. Li-Chen Wang, most commands,
 statements, and functions may be abbreviated, e.g., P. is the same as PRINT.
 
 
@@ -493,7 +494,8 @@ recompiling, most of them having to do with SWTBUG/MIKBUG; see the beginning
 of the original source code, plus the supplied patch (which is what you'll
 alter) to understand what needs to be changed.  Load in the original 1978
 S Record file   nakamozu1_orig.s19   and then load the edited patch over
-that.  Punch an S Record from $0100 to $0C5A, and that's your "good-to-go" file.  :^)
+that.  Punch an S Record from $0100 to $0C5A, and that's your "good-to-go"
+file.  :^)
 
    The graphics statements and functions could be made more-or-less 
 functional with a very simple character ROM, as is in the MC6847 (the video
@@ -509,8 +511,8 @@ I built the original nakamozu1_orig.s19 from the hex dump file, using the
 checksums provided...after I wrote a little checksum program to calculate
 them.  From there, I used the f9dasm disassembler to get some raw code, and
 shoved that into a spreadsheet, so I could start to rebuild an assembly
-source file with comments.  All materials are packeded up on my website at
-www.vanportmedia.com/hm68, or on github at 
+source file with comments.  All materials are packed up on my website at
+www.vanportmedia.com/hm68, and seperate files on github at 
 https://github.com/fishhack66/6800-6809-Stuff
 
    Have fun!  Dave Hassler, June, 2025
